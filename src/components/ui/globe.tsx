@@ -2,9 +2,10 @@
 import { useEffect, useRef, useState } from "react";
 import { Color, Scene, Fog, PerspectiveCamera, Vector3 } from "three";
 import ThreeGlobe from "three-globe";
-import { useThree, Object3DNode, Canvas, extend } from "@react-three/fiber";
+import { useThree, Object3DNode, Canvas, extend, useFrame } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import countries from "../data/globe.json";
+import { CSS2DRenderer } from "three/examples/jsm/Addons.js";
 declare module "@react-three/fiber" {
   interface ThreeElements {
     threeGlobe: Object3DNode<ThreeGlobe, typeof ThreeGlobe>;
@@ -18,7 +19,6 @@ const aspect = 1.2;
 const cameraZ = 300;
 
 type Position = {
-  order: number;
   startLat: number;
   startLng: number;
   endLat: number;
@@ -41,8 +41,6 @@ export type GlobeConfig = {
   directionalLeftLight?: string;
   directionalTopLight?: string;
   pointLight?: string;
-  arcTime?: number;
-  arcLength?: number;
   rings?: number;
   maxRings?: number;
   initialPosition?: {
@@ -61,10 +59,9 @@ interface WorldProps {
 let numbersOfRings = [0];
 
 export function Globe({ globeConfig, data }: WorldProps) {
-  const [globeData, setGlobeData] = useState<
+const [globeData, setGlobeData] = useState<
     | {
         size: number;
-        order: number;
         color: (t: number) => string;
         lat: number;
         lng: number;
@@ -84,8 +81,6 @@ export function Globe({ globeConfig, data }: WorldProps) {
     emissive: "#000000",
     emissiveIntensity: 0.1,
     shininess: 0.9,
-    arcTime: 2000,
-    arcLength: 0.9,
     rings: 1,
     maxRings: 3,
     ...globeConfig,
@@ -97,6 +92,8 @@ export function Globe({ globeConfig, data }: WorldProps) {
       _buildMaterial();
     }
   }, [globeRef.current]);
+
+
 
   const _buildMaterial = () => {
     if (!globeRef.current) return;
@@ -119,16 +116,14 @@ export function Globe({ globeConfig, data }: WorldProps) {
     for (let i = 0; i < arcs.length; i++) {
       const arc = arcs[i];
       const rgb = hexToRgb(arc.color) as { r: number; g: number; b: number };
-      points.push({
+      points.push({ 
         size: defaultProps.pointSize,
-        order: arc.order,
         color: (t: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`,
         lat: arc.startLat,
         lng: arc.startLng,
       });
       points.push({
         size: defaultProps.pointSize,
-        order: arc.order,
         color: (t: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`,
         lat: arc.endLat,
         lng: arc.endLng,
@@ -167,39 +162,42 @@ export function Globe({ globeConfig, data }: WorldProps) {
   const startAnimation = () => {
     if (!globeRef.current || !globeData) return;
 
+    //Configuration for html elements
+    const N = 30;
+    const iconsData = Array.from({ length: N }, () => ({
+      lat: (Math.random() - 0.5) * 180,
+      lng: (Math.random() - 0.5) * 360,
+      size: 2,
+      color: ['red', 'white', 'blue', 'green'][Math.round(Math.random() * 3)]
+    }));
+    const factorySvg ='<svg xmlns="http://www.w3.org/2000/svg" width="10" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>';
+
+    globeRef.current
+      .htmlElementsData(iconsData)
+      .htmlElement((d:any) => {
+        const element = document.createElement('div');
+        element.innerHTML = factorySvg;
+        element.style.color = d.color;
+        element.style.width = `${d.size}px`;
+        return element;
+      });
+
+    // Configuration for arcs
     globeRef.current
       .arcsData(data)
-      .arcStartLat((d) => (d as { startLat: number }).startLat * 1)
-      .arcStartLng((d) => (d as { startLng: number }).startLng * 1)
-      .arcEndLat((d) => (d as { endLat: number }).endLat * 1)
-      .arcEndLng((d) => (d as { endLng: number }).endLng * 1)
-      .arcColor((e: any) => (e as { color: string }).color)
-      .arcAltitude((e) => {
-        return (e as { arcAlt: number }).arcAlt * 1;
-      })
-      .arcStroke((e) => {
-        return [0.32, 0.28, 0.3][Math.round(Math.random() * 2)];
-      })
-      .arcDashLength(defaultProps.arcLength)
-      .arcDashInitialGap((e) => (e as { order: number }).order * 1)
-      .arcDashGap(15)
-      .arcDashAnimateTime((e) => defaultProps.arcTime);
+      .arcColor(() => "#ffcb21")
+      .arcDashLength(0.7)
+      .arcDashInitialGap(() => Math.random() * 5)
+      .arcDashGap(4)
+      .arcDashAnimateTime(1000);
 
-    globeRef.current
-      .pointsData(data)
-      .pointColor((e) => (e as { color: string }).color)
-      .pointsMerge(true)
-      .pointAltitude(0.0)
-      .pointRadius(2);
-
+    //Configuration for rings
     globeRef.current
       .ringsData([])
       .ringColor((e: any) => (t: any) => e.color(t))
       .ringMaxRadius(defaultProps.maxRings)
-      .ringPropagationSpeed(RING_PROPAGATION_SPEED)
-      .ringRepeatPeriod(
-        (defaultProps.arcTime * defaultProps.arcLength) / defaultProps.rings
-      );
+      .ringPropagationSpeed(RING_PROPAGATION_SPEED);
+
   };
 
   useEffect(() => {
@@ -231,6 +229,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
 }
 
 export function WebGLRendererConfig() {
+  
   const { gl, size } = useThree();
 
   useEffect(() => {
@@ -242,6 +241,35 @@ export function WebGLRendererConfig() {
   return null;
 }
 
+export function CSS2DRendererComponent() {
+  const { scene, camera, size } = useThree();
+  const css2dRendererRef = useRef<CSS2DRenderer>();
+
+  useEffect(() => {
+    const css2dRenderer = new CSS2DRenderer();
+    css2dRenderer.setSize(size.width, size.height);
+    css2dRenderer.domElement.style.position = 'absolute';
+    css2dRenderer.domElement.style.top = '0px';
+    css2dRenderer.domElement.style.pointerEvents = 'none';
+    document.body.appendChild(css2dRenderer.domElement);
+
+    css2dRendererRef.current = css2dRenderer;
+
+    return () => {
+      document.body.removeChild(css2dRenderer.domElement);
+    };
+  }, [size]);
+
+  useFrame(() => {
+    if (css2dRendererRef.current) {
+      css2dRendererRef.current.render(scene, camera);
+    }
+  });
+
+  return null;
+}
+
+
 export function World(props: WorldProps) {
   const { globeConfig } = props;
   const scene = new Scene();
@@ -249,6 +277,7 @@ export function World(props: WorldProps) {
   return (
     <Canvas scene={scene} camera={new PerspectiveCamera(50, aspect, 180, 1800)}>
       <WebGLRendererConfig />
+      <CSS2DRendererComponent />
       <ambientLight color={globeConfig.ambientLight} intensity={0.6} />
       <directionalLight
         color={globeConfig.directionalLeftLight}
