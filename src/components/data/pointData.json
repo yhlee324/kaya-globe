@@ -1,0 +1,73 @@
+[{
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94cc5"
+    },
+    "color": "green",
+    "contractor_name": "Global Network Technologies, Inc. (NORWOOD)",
+    "latitude": 42.1782732,
+    "longitude": -71.21717989999999
+  },
+  {
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94cc9"
+    },
+    "color": "green",
+    "contractor_name": "Lan-Tel",
+    "latitude": 39.0121002,
+    "longitude": -94.19420199999999
+  },
+  {
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94cca"
+    },
+    "color": "green",
+    "contractor_name": "Lan-Tel Communications, Inc. (NORWOOD-3)",
+    "latitude": 42.16067229999999,
+    "longitude": -71.20184809999999
+  },
+  {
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94ccf"
+    },
+    "color": "green",
+    "contractor_name": "Select Paint and Finishes, LLC (SALEM)",
+    "latitude": 42.7759941,
+    "longitude": -71.2568881
+  },
+  {
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94cd1"
+    },
+    "color": "green",
+    "contractor_name": "State Electric Corp (BEDFORD)",
+    "latitude": 42.4863638,
+    "longitude": -71.27412819999999
+  }, 
+  {
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94cd2"
+    },
+    "color": "yellow",
+    "contractor_name": "Third Layer Example #1 (Beijing, China)",
+    "latitude": 39.904211,
+    "longitude": 116.407395
+  }, 
+  {
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94cd2"
+    },
+    "color": "yellow",
+    "contractor_name": "Third Layer Example #2 (Kiev, Ukraine)",
+    "latitude": 50.4503,
+    "longitude": 30.52450
+  },
+  {
+    "_id": {
+      "$oid": "6681da8391fa0c8187b94cd2"
+    },
+    "color": "yellow",
+    "contractor_name": "Third Layer Example #3 (Mexico City, Mexico)",
+    "latitude":  19.432608,
+    "longitude": -99.133208
+  }
+]
