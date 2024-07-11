@@ -6,6 +6,7 @@ import { useThree, Object3DNode, Canvas, extend, useFrame } from "@react-three/f
 import { OrbitControls } from "@react-three/drei";
 import countries from "../data/globe.json";
 import { CSS2DRenderer } from "three/examples/jsm/Addons.js";
+import contractorData from "../data/pointData.json";
 declare module "@react-three/fiber" {
   interface ThreeElements {
     threeGlobe: Object3DNode<ThreeGlobe, typeof ThreeGlobe>;
@@ -14,11 +15,10 @@ declare module "@react-three/fiber" {
 
 extend({ ThreeGlobe });
 
-const RING_PROPAGATION_SPEED = 3;
 const aspect = 1.2;
-const cameraZ = 300;
 
 type Position = {
+  order: number;
   startLat: number;
   startLng: number;
   endLat: number;
@@ -56,12 +56,43 @@ interface WorldProps {
   data: Position[];
 }
 
-let numbersOfRings = [0];
+const tooltip = document.createElement('div');
+tooltip.id = 'tooltip';
+tooltip.style.position = 'absolute';
+tooltip.style.display = 'none';
+tooltip.style.background = 'black';
+tooltip.style.border = '1px solid black';
+tooltip.style.color = 'white';
+tooltip.style.padding = '5px';
+tooltip.style.borderRadius = '3px';
+tooltip.style.pointerEvents = 'none';
+document.body.appendChild(tooltip);
 
+//Function to show tooltip on hover
+function showTooltip(d: any, event: MouseEvent) {
+  const tooltip = document.getElementById('tooltip');    
+  if (!tooltip) {
+    return;
+  }
+  tooltip.style.display = 'block';
+  tooltip.innerHTML = d.name;
+  tooltip.style.left = event.pageX + 'px';
+  tooltip.style.top = event.pageY + 'px';
+}
+
+function hideTooltip() {
+  const tooltip = document.getElementById('tooltip');
+  if (tooltip) {
+    tooltip.style.display = 'none';
+  }
+}
+
+//Function to render globe with arcs, rings and html elements
 export function Globe({ globeConfig, data }: WorldProps) {
 const [globeData, setGlobeData] = useState<
     | {
         size: number;
+        order: number;
         color: (t: number) => string;
         lat: number;
         lng: number;
@@ -85,6 +116,7 @@ const [globeData, setGlobeData] = useState<
     maxRings: 3,
     ...globeConfig,
   };
+
 
   useEffect(() => {
     if (globeRef.current) {
@@ -118,12 +150,14 @@ const [globeData, setGlobeData] = useState<
       const rgb = hexToRgb(arc.color) as { r: number; g: number; b: number };
       points.push({ 
         size: defaultProps.pointSize,
+        order: arc.order,
         color: (t: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`,
         lat: arc.startLat,
         lng: arc.startLng,
       });
       points.push({
         size: defaultProps.pointSize,
+        order: arc.order,
         color: (t: number) => `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${1 - t})`,
         lat: arc.endLat,
         lng: arc.endLng,
@@ -163,12 +197,12 @@ const [globeData, setGlobeData] = useState<
     if (!globeRef.current || !globeData) return;
 
     //Configuration for html elements
-    const N = 30;
-    const iconsData = Array.from({ length: N }, () => ({
-      lat: (Math.random() - 0.5) * 180,
-      lng: (Math.random() - 0.5) * 360,
+    const iconsData = contractorData.map(contractor => ({
+      lat: contractor.latitude,
+      lng: contractor.longitude,
       size: 2,
-      color: ['red', 'white', 'blue', 'green'][Math.round(Math.random() * 3)]
+      color: contractor.color,
+      name: contractor.contractor_name,
     }));
     const factorySvg ='<svg xmlns="http://www.w3.org/2000/svg" width="10" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>';
 
@@ -179,6 +213,9 @@ const [globeData, setGlobeData] = useState<
         element.innerHTML = factorySvg;
         element.style.color = d.color;
         element.style.width = `${d.size}px`;
+        element.style.pointerEvents = 'auto';
+        element.addEventListener('mouseover', (event) => showTooltip(d, event));
+        element.addEventListener('mouseout', hideTooltip);
         return element;
       });
 
@@ -186,40 +223,12 @@ const [globeData, setGlobeData] = useState<
     globeRef.current
       .arcsData(data)
       .arcColor(() => "#ffcb21")
-      .arcDashLength(0.7)
-      .arcDashInitialGap(() => Math.random() * 5)
+      .arcDashLength(0.8)
+      .arcDashInitialGap((e) => (e as { order: number }).order * 1)
       .arcDashGap(4)
       .arcDashAnimateTime(1000);
 
-    //Configuration for rings
-    globeRef.current
-      .ringsData([])
-      .ringColor((e: any) => (t: any) => e.color(t))
-      .ringMaxRadius(defaultProps.maxRings)
-      .ringPropagationSpeed(RING_PROPAGATION_SPEED);
-
   };
-
-  useEffect(() => {
-    if (!globeRef.current || !globeData) return;
-
-    const interval = setInterval(() => {
-      if (!globeRef.current || !globeData) return;
-      numbersOfRings = genRandomNumbers(
-        0,
-        data.length,
-        Math.floor((data.length * 4) / 5)
-      );
-
-      globeRef.current.ringsData(
-        globeData.filter((d, i) => numbersOfRings.includes(i))
-      );
-    }, 2000);
-
-    return () => {
-      clearInterval(interval);
-    };
-  }, [globeRef.current, globeData]);
 
   return (
     <>
@@ -228,6 +237,7 @@ const [globeData, setGlobeData] = useState<
   );
 }
 
+//Renders WebGL components (globe, arcs, rings)
 export function WebGLRendererConfig() {
   
   const { gl, size } = useThree();
@@ -241,6 +251,7 @@ export function WebGLRendererConfig() {
   return null;
 }
 
+//Function to render css2d components (html elements on globe)
 export function CSS2DRendererComponent() {
   const { scene, camera, size } = useThree();
   const css2dRendererRef = useRef<CSS2DRenderer>();
@@ -275,7 +286,7 @@ export function World(props: WorldProps) {
   const scene = new Scene();
   scene.fog = new Fog(0xffffff, 400, 2000);
   return (
-    <Canvas scene={scene} camera={new PerspectiveCamera(50, aspect, 180, 1800)}>
+    <Canvas scene={scene} camera={new PerspectiveCamera(50, aspect, 0.1, 1800)}>
       <WebGLRendererConfig />
       <CSS2DRendererComponent />
       <ambientLight color={globeConfig.ambientLight} intensity={0.6} />
@@ -295,11 +306,11 @@ export function World(props: WorldProps) {
       <Globe {...props} />
       <OrbitControls
         enablePan={false}
-        enableZoom={false}
-        minDistance={cameraZ}
-        maxDistance={cameraZ}
+        enableZoom={true}
+        minDistance={200}
+        maxDistance={350}
         autoRotateSpeed={1}
-        autoRotate={true}
+        autoRotate={false}
         minPolarAngle={Math.PI / 3.5}
         maxPolarAngle={Math.PI - Math.PI / 3}
       />

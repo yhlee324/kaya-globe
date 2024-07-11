@@ -25,49 +25,57 @@ export function KayaGlobe() {
     rings: 1,
     maxRings: 10,
     initialPosition: { lat: 22.3193, lng: 114.1694 },
-    autoRotate: true,
+    autoRotate: false,
     autoRotateSpeed: 0.5,
   };
-  const colors = ["#06b6d4", "#3b82f6", "#6366f1"];
   const sampleArcs = [
     {
-        startLat: -19.885592,
-        startLng: -43.951191,
-        endLat: 42.345290,
-        endLng: -71.103850,
-        arcAlt: 0.3,
-        color: "#06b6d4",
+      //Beijing to contractor 
+      order: 1,
+      startLat: 39.904211,
+      startLng: 116.407395,
+      endLat: 39.0121002,
+      endLng: -94.19420199999999,
+      arcAlt: 0.3,
+      color: "#06b6d4",
     },
     {
-        startLat: 28.6139,
-        startLng: 30.209,
-        endLat: 42.345290,
-        endLng: -71.103850,
-        arcAlt: 0.2,
-        color: "#06b6d4",
+      //Kiev to contractor
+      order: 1,
+      startLat: 50.4503,
+      startLng: 30.52450,
+      endLat: 39.0121002,
+      endLng: -94.19420199999999,
+      arcAlt: 0.2,
+      color: "#06b6d4",
     },
     {
-        startLat: 19.885592,
-        startLng: 43.951191,
-        endLat: 42.345290,
-        endLng: -71.103850,
-        arcAlt: 0.5,
-        color: colors[Math.floor(Math.random() * (colors.length - 1))],
+    //Mexico City to contractor
+      order: 1,
+      startLat: 19.432608,
+      startLng: -99.133208,
+      endLat: 39.0121002,
+      endLng: -94.19420199999999,
+      arcAlt: 0.2,
+      color: "#06b6d4",
     },
     {
-        startLat: 50.885592,
-        startLng: 70.951,
-        endLat: 42.345290,
-        endLng: -71.103850,
-        arcAlt: 0.5,
-        color: colors[Math.floor(Math.random() * (colors.length - 1))],
+      //From contractor to 421 Park Street
+      order: 2,
+      startLat: 39.0121002,
+      startLng: -94.19420199999999,
+      endLat: 42.296026,
+      endLng: -71.071539,
+      arcAlt: 0.2,
+      color: "green",
     },
+
   ];
 
   return (
-<div className="flex items-center justify-center py-20 h-screen bg-white dark:bg-black relative w-full">
-    <div className="max-w-7xl mx-auto w-full relative overflow-hidden h-full md:h-[40rem] px-4">
-        <motion.div
+    <div className="flex items-center justify-center py-20 h-screen bg-black relative w-full">
+    {/* <div className="w-full h-full mx-auto relative overflow-hidden"> */}
+    <motion.div
           initial={{
             opacity: 0,
             y: 20,
@@ -82,12 +90,10 @@ export function KayaGlobe() {
           className="div"
         >
         </motion.div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="relative" style={{ width: '700px', height: '700px' }}>
-            <World data={sampleArcs} globeConfig={globeConfig} />
-          </div>
+        <div className="relative justify-center" style={{ width: '100vw', height: '100vh'}}>
+          <World data={sampleArcs} globeConfig={globeConfig} />
         </div>
-      </div>
+      {/* </div> */}
     </div>
   );
 }
