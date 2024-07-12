@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import * as THREE from "three";
 import { Color, Scene, Fog, PerspectiveCamera, Vector3 } from "three";
 import ThreeGlobe from "three-globe";
 import { useThree, Object3DNode, Canvas, extend, useFrame } from "@react-three/fiber";
@@ -15,7 +16,11 @@ declare module "@react-three/fiber" {
 
 extend({ ThreeGlobe });
 
+const fov = 50;
 const aspect = 1.2;
+const near = 0.1;
+const far = 1000;
+const camera = new PerspectiveCamera(fov, aspect, near, far);
 
 type Position = {
   order: number;
@@ -56,6 +61,9 @@ interface WorldProps {
   data: Position[];
 }
 
+/**
+ * Tooltip function to show tooltip on hover
+ */
 const tooltip = document.createElement('div');
 tooltip.id = 'tooltip';
 tooltip.style.position = 'absolute';
@@ -68,7 +76,6 @@ tooltip.style.borderRadius = '3px';
 tooltip.style.pointerEvents = 'none';
 document.body.appendChild(tooltip);
 
-//Function to show tooltip on hover
 function showTooltip(d: any, event: MouseEvent) {
   const tooltip = document.getElementById('tooltip');    
   if (!tooltip) {
@@ -87,9 +94,11 @@ function hideTooltip() {
   }
 }
 
-//Function to render globe with arcs, rings and html elements
+/**
+ * The Globe Component
+ */
 export function Globe({ globeConfig, data }: WorldProps) {
-const [globeData, setGlobeData] = useState<
+  const [globeData, setGlobeData] = useState<
     | {
         size: number;
         order: number;
@@ -117,6 +126,7 @@ const [globeData, setGlobeData] = useState<
     ...globeConfig,
   };
 
+  const [camera, setCamera] = useState<PerspectiveCamera | undefined>();
 
   useEffect(() => {
     if (globeRef.current) {
@@ -124,8 +134,6 @@ const [globeData, setGlobeData] = useState<
       _buildMaterial();
     }
   }, [globeRef.current]);
-
-
 
   const _buildMaterial = () => {
     if (!globeRef.current) return;
@@ -186,28 +194,116 @@ const [globeData, setGlobeData] = useState<
         .showAtmosphere(defaultProps.showAtmosphere)
         .atmosphereColor(defaultProps.atmosphereColor)
         .atmosphereAltitude(defaultProps.atmosphereAltitude)
-        .hexPolygonColor((e) => {
+        .hexPolygonColor(() => {
           return defaultProps.polygonColor;
         });
       startAnimation();
     }
   }, [globeData]);
 
+  //Initialize variables for "updateLabels"
+  const tempV = new THREE.Vector3();
+  const cameraToPoint = new THREE.Vector3();
+  const cameraPosition = new THREE.Vector3();
+  const normalMatrix = new THREE.Matrix3();
+  const settings = {
+    minArea: 20,
+    maxVisibleDot: -0.2,
+  };
+
+  /**
+   * Function to update html elements' visibility based on camera orientation. 
+   * This function is necessary as the html elements are not part of the WebGL scene.
+   * All credits to Jonathan P Christie, from https://gist.github.com/mathcodes/758a5699482b22a13d762c614acd1bb3
+   */
+  // const updateLabels = () => {
+  //   if (!camera) return;
+  //   loadContractorData();
+  //   // get a matrix that represents a relative orientation of the camera
+  //   normalMatrix.getNormalMatrix(camera.matrixWorldInverse);
+  //   // get the camera's position
+  //   camera.getWorldPosition(cameraPosition);
+  //   for (const contractor : contractorData) {
+  //     // Orient the position based on the camera's orientation.
+  //     // Since the sphere is at the origin and the sphere is a unit sphere
+  //     // this gives us a camera relative direction vector for the position.
+  //     tempV.copy(position);
+  //     tempV.applyMatrix3(normalMatrix);
+
+  //     // compute the direction to this position from the camera
+  //     cameraToPoint.copy(position);
+  //     cameraToPoint.applyMatrix4(camera.matrixWorldInverse).normalize();
+
+  //     // get the dot product of camera relative direction to this position
+  //     // on the globe with the direction from the camera to that point.
+  //     // -1 = facing directly towards the camera
+  //     // 0 = exactly on tangent of the sphere from the camera
+  //     // > 0 = facing away
+  //     const dot = tempV.dot(cameraToPoint);
+
+  //     // if the orientation is not facing us hide it.
+  //     if (dot > settings.maxVisibleDot) {
+  //       elem.style.display = 'none';
+  //       continue;
+  //     }
+
+  //     // restore the element to its default display style
+  //     elem.style.display = '';
+
+  //     // get the normalized screen coordinate of that position
+  //     // x and y will be in the -1 to +1 range with x = -1 being
+  //     // on the left and y = -1 being on the bottom
+  //     tempV.copy(position);
+  //     tempV.project(camera);
+
+  //     // convert the normalized position to CSS coordinates
+  //     const x = (tempV.x *  .5 + .5) * canvas.clientWidth;
+  //     const y = (tempV.y * -.5 + .5) * canvas.clientHeight;
+
+  //     // move the elem to that position
+  //     elem.style.transform = `translate(-50%, -50%) translate(${x}px,${y}px)`;
+
+  //     // set the zIndex for sorting
+  //     elem.style.zIndex = (-tempV.z * .5 + .5) * 100000 | 0;
+  //   }
+  // };
+
   const startAnimation = () => {
     if (!globeRef.current || !globeData) return;
 
     //Configuration for html elements
-    const iconsData = contractorData.map(contractor => ({
+    const points = contractorData.map(contractor => ({
       lat: contractor.latitude,
       lng: contractor.longitude,
-      size: 2,
-      color: contractor.color,
       name: contractor.contractor_name,
+      color: contractor.color,
+      position: new THREE.Vector3(),
     }));
+    const lonFudge = Math.PI * 1.5;
+    const latFudge = Math.PI;
+    // these helpers will make it easy to position the boxes
+    // We can rotate the lon helper on its Y axis to the longitude
+    const lonHelper = new THREE.Object3D();
+    // We rotate the latHelper on its X axis to the latitude
+    const latHelper = new THREE.Object3D();
+    lonHelper.add(latHelper);
+    // The position helper moves the object to the edge of the sphere
+    const positionHelper = new THREE.Object3D();
+    positionHelper.position.z = 1;
+    latHelper.add(positionHelper);
+
+    for (const point of points) {
+      lonHelper.rotation.y = THREE.MathUtils.degToRad(point.lng) + lonFudge;
+      latHelper.rotation.x = THREE.MathUtils.degToRad(point.lat) + latFudge;
+      positionHelper.updateWorldMatrix(true, false);
+      const position = new THREE.Vector3();
+      positionHelper.getWorldPosition(position);
+      point.position = position;
+    }
     const factorySvg ='<svg xmlns="http://www.w3.org/2000/svg" width="10" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>';
 
     globeRef.current
-      .htmlElementsData(iconsData)
+      .htmlElementsData(points)
       .htmlElement((d:any) => {
         const element = document.createElement('div');
         element.innerHTML = factorySvg;
@@ -286,7 +382,7 @@ export function World(props: WorldProps) {
   const scene = new Scene();
   scene.fog = new Fog(0xffffff, 400, 2000);
   return (
-    <Canvas scene={scene} camera={new PerspectiveCamera(50, aspect, 0.1, 1800)}>
+    <Canvas scene={scene} camera={camera}>
       <WebGLRendererConfig />
       <CSS2DRendererComponent />
       <ambientLight color={globeConfig.ambientLight} intensity={0.6} />
