@@ -24,7 +24,7 @@ export function KayaGlobe() {
     pointLight: "#ffffff",
     rings: 1,
     maxRings: 10,
-    initialPosition: { lat: 22.3193, lng: 114.1694 },
+    initialPosition: { lat: 0, lng: 0 },
     autoRotate: false,
     autoRotateSpeed: 0.5,
   };
@@ -74,7 +74,6 @@ export function KayaGlobe() {
 
   return (
     <div className="flex items-center justify-center py-20 h-screen bg-black relative w-full">
-    {/* <div className="w-full h-full mx-auto relative overflow-hidden"> */}
     <motion.div
           initial={{
             opacity: 0,
@@ -93,7 +92,6 @@ export function KayaGlobe() {
         <div className="relative justify-center" style={{ width: '100vw', height: '100vh'}}>
           <World data={sampleArcs} globeConfig={globeConfig} />
         </div>
-      {/* </div> */}
     </div>
   );
 }
