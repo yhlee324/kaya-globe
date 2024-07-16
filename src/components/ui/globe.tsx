@@ -103,6 +103,27 @@ function hideTooltip() {
   }
 }
 
+const updateObjVisibility = (globalPov: THREE.Vector3, globePos: THREE.Vector3) => {
+  if (globalPov) {
+    const globeRadius = 100;
+    const pov = globePos ? globalPov.clone().sub(globePos) : globalPov; 
+
+    let povDist, maxSurfacePosAngle;
+
+    for (const point of points) {
+      const {position, elem} = point;
+      if (elem == null) continue;
+      povDist === undefined && (povDist = pov.length());
+      maxSurfacePosAngle === undefined && (maxSurfacePosAngle = Math.acos(globeRadius / povDist));
+      if (pov.angleTo(position) > maxSurfacePosAngle) {
+        elem.style.visibility = 'hidden';
+        continue;
+      }
+      elem.style.visibility = '';
+    }
+  }
+}
+
 /**
  * The Globe Component
  */
@@ -119,6 +140,16 @@ export function Globe({ globeConfig, data }: WorldProps) {
   >(null);
 
   const globeRef = useRef<ThreeGlobe | null>(null);
+
+  //Get the position of the globe
+  if (globeRef.current) {
+    const globePosition = globeRef.current.position;
+
+  }
+  //Get position of the camera
+  const { camera } = useThree();
+  const cameraPosition = camera.position;
+
 
   const defaultProps = {
     pointSize: 1,
@@ -192,6 +223,25 @@ export function Globe({ globeConfig, data }: WorldProps) {
     setGlobeData(filteredPoints);
   };
 
+  //Functions to compute positions of the html elements
+  const parsePointData = () => {
+    for (const point of points) {
+      point.position = polar2Cartesian(point.lat, point.lng);
+      console.log(point.position);
+    }
+  }
+  
+  const polar2Cartesian = (lat: number, lng: number, relAltitude = 0) => {
+    const phi = (90 - lat) * Math.PI / 180;
+    const theta = (90 - lng) * Math.PI / 180;
+    const r = 100 * (1 + relAltitude);
+    return new THREE.Vector3 (
+      r * Math.sin(phi) * Math.cos(theta),
+      r * Math.cos(phi),
+      r * Math.sin(phi) * Math.sin(theta)
+    );
+  }
+
   useEffect(() => {
     if (globeRef.current && globeData) {
       globeRef.current
@@ -205,8 +255,15 @@ export function Globe({ globeConfig, data }: WorldProps) {
           return defaultProps.polygonColor;
         });
       startAnimation();
+      updateObjVisibility(cameraPosition, globeRef.current.position);
     }
   }, [globeData]);
+
+  useFrame(() => {
+    if (globeRef.current) {
+      updateObjVisibility(cameraPosition, globeRef.current.position);
+    }
+  });
 
   /**
    * The animation component of the globe
@@ -228,6 +285,8 @@ export function Globe({ globeConfig, data }: WorldProps) {
         d.elem = element;
         return element;
       });
+
+      parsePointData();
 
     // Configuration for arcs
     globeRef.current
@@ -274,7 +333,6 @@ export function CSS2DRendererComponent() {
     document.body.appendChild(css2dRenderer.domElement);
 
     css2dRendererRef.current = css2dRenderer;
-    parsePointData();
 
     return () => {
       document.body.removeChild(css2dRenderer.domElement);
@@ -288,89 +346,6 @@ export function CSS2DRendererComponent() {
   });
 
   return null;
-
-  function parsePointData(){
-    const lonFudge = Math.PI * 1.5;
-    const latFudge = Math.PI;
-    const lonHelper = new THREE.Object3D();
-    const latHelper = new THREE.Object3D();
-    lonHelper.add(latHelper);
-    const positionHelper = new THREE.Object3D();
-    positionHelper.position.z = 1;
-    latHelper.add(positionHelper);
-
-    for (const point of points) {
-      lonHelper.rotation.y = THREE.MathUtils.degToRad(point.lng) + lonFudge;
-      latHelper.rotation.x = THREE.MathUtils.degToRad(point.lat) + latFudge;
-      positionHelper.updateWorldMatrix(true, false);
-      const position = new THREE.Vector3();
-      positionHelper.getWorldPosition(position);
-      point.position = position;
-    }
-  }
-
-  /**
-     * Function to update html elements' visibility based on camera orientation. 
-     * This function is necessary as the html elements are not part of the WebGL scene.
-     * All credits to Jonathan P Christie, from https://gist.github.com/mathcodes/758a5699482b22a13d762c614acd1bb3
-     */
-  function updateLabels(){
-    //Initialize variables for "updateLabels"
-    const tempV = new THREE.Vector3();
-    const cameraToPoint = new THREE.Vector3();
-    const cameraPosition = new THREE.Vector3();
-    const normalMatrix = new THREE.Matrix3();
-    const settings = {
-      maxVisibleDot: -0.2,
-    };
-    normalMatrix.getNormalMatrix(camera.matrixWorldInverse);
-    // get the camera's position
-    camera.getWorldPosition(cameraPosition);
-    for (const point of points) {
-      const {position, elem} = point;
-      if (elem == null) continue;
-      // Orient the position based on the camera's orientation.
-      // Since the sphere is at the origin and the sphere is a unit sphere
-      // this gives us a camera relative direction vector for the position.
-      tempV.copy(position);
-      tempV.applyMatrix3(normalMatrix);
-
-      // compute the direction to this position from the camera
-      cameraToPoint.copy(position).sub(cameraPosition).normalize();
-
-
-      // get the dot product of camera relative direction to this position
-      // on the globe with the direction from the camera to that point.
-      // -1 = facing directly towards the camera
-      // 0 = exactly on tangent of the sphere from the camera
-      // > 0 = facing away
-      const dot = tempV.dot(cameraToPoint);
-
-      // if the orientation is not facing us hide it.
-      if (dot > settings.maxVisibleDot) {
-        elem.style.visibility = 'hidden';
-        continue;
-      }
-      else {
-        // restore the element to its default display style
-        elem.style.visibility = '';
-        
-        // get the normalized screen coordinate of that position
-        // x and y will be in the -1 to +1 range with x = -1 being
-        // on the left and y = -1 being on the bottom
-        tempV.copy(position);
-        tempV.project(camera);
-
-        // Convert normalized coordinates to screen coordinates
-        const x = (tempV.x * 0.5 + 0.5) * size.width;
-        const y = (tempV.y * -0.5 + 0.5) * size.height;
-
-        // Update element's position
-        elem.style.transform = `translate(-50%, -50%) translate(${x}px, ${y}px)`;
-        elem.style.zIndex = `${(-tempV.z * .5 + .5) * 100000 | 0}`;      
-      }
-    }
-  }
 }
 
 export function World(props: WorldProps) {
