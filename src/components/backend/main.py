@@ -43,7 +43,10 @@ def create_unique_contractors():
             new_data.append({
                 "contractor_name": contractor,
                 "latitude": lat,
-                "longitude": lng
+                "longitude": lng,
+                "item_name": name,
+                "submittal_number": submittal_number,
+                "lead_time": lead_time
             })
         except HTTPException as e:
             print(f"Skipping {contractor}: {e.detail}")

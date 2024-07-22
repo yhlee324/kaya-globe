@@ -47,7 +47,7 @@
     "_id": {
       "$oid": "6681da8391fa0c8187b94cd2"
     },
-    "color": "yellow",
+    "color": "#facc15",
     "contractor_name": "Third Layer Example #1 (Beijing, China)",
     "latitude": 33.904211,
     "longitude": 106.407395
@@ -56,7 +56,7 @@
     "_id": {
       "$oid": "6681da8391fa0c8187b94cd2"
     },
-    "color": "yellow",
+    "color": "#facc15",
     "contractor_name": "Third Layer Example #2 (Kiev, Ukraine)",
     "latitude": 50.4503,
     "longitude": 30.52450
@@ -65,7 +65,7 @@
     "_id": {
       "$oid": "6681da8391fa0c8187b94cd2"
     },
-    "color": "yellow",
+    "color": "#facc15",
     "contractor_name": "Third Layer Example #3 (Mexico City, Mexico)",
     "latitude":  19.432608,
     "longitude": -99.133208

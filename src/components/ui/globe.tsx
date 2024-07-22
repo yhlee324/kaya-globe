@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 import { Color, Scene, Fog, PerspectiveCamera, Vector3 } from "three";
 import ThreeGlobe from "three-globe";
@@ -7,7 +7,7 @@ import { useThree, Object3DNode, Canvas, extend, useFrame } from "@react-three/f
 import { OrbitControls } from "@react-three/drei";
 import countries from "../data/globe.json";
 import { CSS2DRenderer } from "three/examples/jsm/Addons.js";
-import contractorData from "../data/pointData.json";
+import contractorData from "../data/contractorData.json";
 declare module "@react-three/fiber" {
   interface ThreeElements {
     threeGlobe: Object3DNode<ThreeGlobe, typeof ThreeGlobe>;
@@ -15,7 +15,8 @@ declare module "@react-three/fiber" {
 } extend({ ThreeGlobe });
 
 const factorySvg ='<svg xmlns="http://www.w3.org/2000/svg" width="10" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-factory"><path d="M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z"/><path d="M17 18h1"/><path d="M12 18h1"/><path d="M7 18h1"/></svg>';
-
+const buildingSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-building"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"/><path d="M9 22v-4h6v4"/><path d="M8 6h.01"/><path d="M16 6h.01"/><path d="M12 6h.01"/><path d="M12 10h.01"/><path d="M12 14h.01"/><path d="M16 10h.01"/><path d="M16 14h.01"/><path d="M8 10h.01"/><path d="M8 14h.01"/></svg>`;
+const dropDownSvg = '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down"><path d="m6 9 6 6 6-6"/></svg>'
 //Coordinates and other details for each contractor
 const points = contractorData.map(contractor => ({
   lat: contractor.latitude,
@@ -25,11 +26,6 @@ const points = contractorData.map(contractor => ({
   position: new THREE.Vector3(),
   elem: null as HTMLElement | null,
 }));
-
-const fov = 50;
-const aspect = 2;
-const near = 0.1;
-const far = 1000;
 
 type Position = {
   order: number;
@@ -70,6 +66,11 @@ interface WorldProps {
   data: Position[];
 }
 
+const fov = 50;
+const aspect = 2;
+const near = 0.1;
+const far = 1000;
+
 /**
  * Tooltip function to show tooltip on hover
  */
@@ -77,21 +78,30 @@ const tooltip = document.createElement('div');
 tooltip.id = 'tooltip';
 tooltip.style.position = 'absolute';
 tooltip.style.display = 'none';
-tooltip.style.background = 'black';
-tooltip.style.border = '1px solid black';
+tooltip.style.backgroundColor = 'rgba(24, 24, 27, 0.75)';
 tooltip.style.color = 'white';
 tooltip.style.padding = '5px';
 tooltip.style.borderRadius = '3px';
-tooltip.style.pointerEvents = 'none';
+tooltip.style.pointerEvents = 'auto';
 document.body.appendChild(tooltip);
 
 function showTooltip(d: any, event: MouseEvent) {
   const tooltip = document.getElementById('tooltip');    
-  if (!tooltip) {
-    return;
-  }
+  if (!tooltip) return;
   tooltip.style.display = 'block';
-  tooltip.innerHTML = `${d.name}<br>Position: (${d.position.x}, ${d.position.y}, ${d.position.z})`;  
+  tooltip.innerHTML = 
+`
+<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+  <div style="flex-shrink: 0; padding: 5px; margin-right: 5px; color: ${d.color}">${buildingSvg}</div>
+  <div id="content" style="flex-grow: 1;">
+    <div style="font-size: 10px;">Name</div>
+    ${d.name}
+    <div style="font-size: 8px;">3 pcs</div>
+  </div>
+  <button style="flex-shrink: 0; padding: 5px 10px;">${dropDownSvg}</button>
+</div>
+`;
+  tooltip.style.borderLeft = `${d.color} solid 2px`;
   tooltip.style.left = event.pageX + 'px';
   tooltip.style.top = event.pageY + 'px';
 }
@@ -103,23 +113,31 @@ function hideTooltip() {
   }
 }
 
+
+/**
+ * Updates the visibility of the html elements on the globe. This function is necessary as 
+ * the html elements are rendered by css2drenderer, which is not part of the threejs scene.
+ * 
+ */
 const updateObjVisibility = (globalPov: THREE.Vector3, globePos: THREE.Vector3) => {
   if (globalPov) {
     const globeRadius = 100;
-    const pov = globePos ? globalPov.clone().sub(globePos) : globalPov; 
+    const pov = globePos ? globalPov.clone().sub(globePos) : globalPov.clone();
 
-    let povDist, maxSurfacePosAngle;
+     const povDist = pov.length();
+    const maxSurfacePosAngle = Math.acos(globeRadius / povDist);
 
     for (const point of points) {
       const {position, elem} = point;
-      if (elem == null) continue;
-      povDist === undefined && (povDist = pov.length());
-      maxSurfacePosAngle === undefined && (maxSurfacePosAngle = Math.acos(globeRadius / povDist));
-      if (pov.angleTo(position) > maxSurfacePosAngle) {
-        elem.style.visibility = 'hidden';
-        continue;
+      if (!elem) continue; 
+
+      const isVisible = pov.angleTo(position) <= maxSurfacePosAngle;
+      const currentVisibility = elem.style.visibility !== 'hidden';
+
+      // Update the DOM only if there's a change in visibility status
+      if (isVisible !== currentVisibility) {
+        elem.style.visibility = isVisible ? '' : 'hidden';
       }
-      elem.style.visibility = '';
     }
   }
 }
@@ -141,15 +159,10 @@ export function Globe({ globeConfig, data }: WorldProps) {
 
   const globeRef = useRef<ThreeGlobe | null>(null);
 
-  //Get the position of the globe
-  if (globeRef.current) {
-    const globePosition = globeRef.current.position;
-
-  }
   //Get position of the camera
   const { camera } = useThree();
   const cameraPosition = camera.position;
-
+  const previousCameraPosition = useRef(new THREE.Vector3());
 
   const defaultProps = {
     pointSize: 1,
@@ -227,7 +240,6 @@ export function Globe({ globeConfig, data }: WorldProps) {
   const parsePointData = () => {
     for (const point of points) {
       point.position = polar2Cartesian(point.lat, point.lng);
-      console.log(point.position);
     }
   }
   
@@ -255,13 +267,19 @@ export function Globe({ globeConfig, data }: WorldProps) {
           return defaultProps.polygonColor;
         });
       startAnimation();
-      updateObjVisibility(cameraPosition, globeRef.current.position);
+
+      if (globeRef.current && camera.position) {
+        updateObjVisibility(camera.position, globeRef.current.position);
+      }
     }
   }, [globeData]);
 
+  //Updates object visibility
   useFrame(() => {
-    if (globeRef.current) {
-      updateObjVisibility(cameraPosition, globeRef.current.position);
+    const currentCameraPosition = camera.position;
+    if (!previousCameraPosition.current.equals(currentCameraPosition)) {
+      updateObjVisibility(currentCameraPosition, globeRef.current?.position ?? new THREE.Vector3());
+      previousCameraPosition.current.copy(currentCameraPosition);
     }
   });
 
@@ -286,7 +304,7 @@ export function Globe({ globeConfig, data }: WorldProps) {
         return element;
       });
 
-      parsePointData();
+    parsePointData();
 
     // Configuration for arcs
     globeRef.current
@@ -331,9 +349,8 @@ export function CSS2DRendererComponent() {
     css2dRenderer.domElement.style.top = '0px';
     css2dRenderer.domElement.style.pointerEvents = 'none';
     document.body.appendChild(css2dRenderer.domElement);
-
+    
     css2dRendererRef.current = css2dRenderer;
-
     return () => {
       document.body.removeChild(css2dRenderer.domElement);
     };
