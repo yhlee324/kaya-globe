@@ -1,10 +1,12 @@
-import { KayaGlobe } from "@/components/kaya-globe";
+import { KayaGlobe } from "@/components/kayaGlobe";
+import StreamingFeed  from "@/components/streamingFeed";
 
 
 const Pages = () => {
   return (
     <div>
       <KayaGlobe />
+      <StreamingFeed />
     </div>
   );
 };

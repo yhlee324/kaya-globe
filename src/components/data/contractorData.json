@@ -5,7 +5,11 @@
     "color": "green",
     "contractor_name": "Global Network Technologies, Inc. (NORWOOD)",
     "latitude": 42.1782732,
-    "longitude": -71.21717989999999
+    "longitude": -71.21717989999999,
+    "item": "Fire Stop and Smoke Seals",
+    "submittal_number": "270000-001.0",
+    "lead_time": 4,
+    "status": "On Site"
   },
   {
     "_id": {
@@ -14,8 +18,13 @@
     "color": "green",
     "contractor_name": "Lan-Tel",
     "latitude": 39.0121002,
-    "longitude": -94.19420199999999
+    "longitude": -94.19420199999999,
+    "item": "Blue Phones",
+    "submittal_number": "280500-10.0",
+    "lead_time": 5,
+    "status": "On Site"
   },
+  
   {
     "_id": {
       "$oid": "6681da8391fa0c8187b94cca"
@@ -23,7 +32,11 @@
     "color": "green",
     "contractor_name": "Lan-Tel Communications, Inc. (NORWOOD-3)",
     "latitude": 42.16067229999999,
-    "longitude": -71.20184809999999
+    "longitude": -71.20184809999999,
+    "item": "Cameras",
+    "submittal_number": "280500-002.0",
+    "lead_time": 4,
+    "status": "On Site"
   },
   {
     "_id": {
@@ -32,7 +45,11 @@
     "color": "green",
     "contractor_name": "Select Paint and Finishes, LLC (SALEM)",
     "latitude": 42.7759941,
-    "longitude": -71.2568881
+    "longitude": -71.2568881,
+    "item": "Tnemec- Zinc Fluoronar",
+    "submittal_number": "084413-078.0",
+    "lead_time": 2,
+    "status": "On Site"
   },
   {
     "_id": {
@@ -41,7 +58,11 @@
     "color": "green",
     "contractor_name": "State Electric Corp (BEDFORD)",
     "latitude": 42.4863638,
-    "longitude": -71.27412819999999
+    "longitude": -71.27412819999999,
+    "item": "Grounding System and Accessories",
+    "submittal_number": "261000-010.0",
+    "lead_time": 12,
+    "status": "On Site"
   }, 
   {
     "_id": {
@@ -50,7 +71,10 @@
     "color": "#facc15",
     "contractor_name": "Third Layer Example #1 (Beijing, China)",
     "latitude": 33.904211,
-    "longitude": 106.407395
+    "longitude": 106.407395,
+    "item": "Steel parts",
+    "lead_time": 10,
+    "status": "In Production"
   }, 
   {
     "_id": {
@@ -59,7 +83,10 @@
     "color": "#facc15",
     "contractor_name": "Third Layer Example #2 (Kiev, Ukraine)",
     "latitude": 50.4503,
-    "longitude": 30.52450
+    "longitude": 30.52450,
+    "item": "Concrete materials",
+    "lead_time": 8,
+    "status": "In Production"
   },
   {
     "_id": {
@@ -68,6 +95,9 @@
     "color": "#facc15",
     "contractor_name": "Third Layer Example #3 (Mexico City, Mexico)",
     "latitude":  19.432608,
-    "longitude": -99.133208
+    "longitude": -99.133208,
+    "item": "Copper coating",
+    "lead_time": 6,
+    "status": "In Production"
   }
 ]

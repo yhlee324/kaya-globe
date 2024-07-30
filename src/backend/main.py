@@ -38,21 +38,22 @@ def create_unique_contractors():
     contractors = collection.distinct("responsible_contractor")
     new_data = []
     for contractor in contractors:
-        try:
-            lat, lng = get_coordinates(contractor)
-            new_data.append({
-                "contractor_name": contractor,
-                "latitude": lat,
-                "longitude": lng,
-                "item_name": name,
-                "submittal_number": submittal_number,
-                "lead_time": lead_time
-            })
-        except HTTPException as e:
-            print(f"Skipping {contractor}: {e.detail}")
-        except Exception as e:
-            print(f"Skipping {contractor}: {str(e)}")
-    
+        doc = collection.find_one({"responsible_contractor": contractor})
+        if doc:
+            try:
+                lat, lng = get_coordinates(contractor)
+                new_data.append({
+                    "contractor_name": contractor,
+                    "latitude": lat,
+                    "longitude": lng,
+                    "item": doc.get("name"),
+                    "submittal_number": doc.get("submittal_number"),
+                    "lead_time": doc.get("lead_time"),
+                })
+            except HTTPException as e:
+                print(f"Skipping {contractor}: {e.detail}")
+            except Exception as e:
+                print(f"Skipping {contractor}: {str(e)}")
     if new_data:
         new_collection.insert_many(new_data)
     return {"inserted_count": len(new_data)}

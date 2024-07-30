@@ -23,6 +23,10 @@ const points = contractorData.map(contractor => ({
   lng: contractor.longitude,
   name: contractor.contractor_name,
   color: contractor.color,
+  item: contractor.item,
+  time: contractor.lead_time,
+  sn: contractor.submittal_number,
+  status: contractor.status,
   position: new THREE.Vector3(),
   elem: null as HTMLElement | null,
 }));
@@ -66,6 +70,7 @@ interface WorldProps {
   data: Position[];
 }
 
+//Initial camera settings
 const fov = 50;
 const aspect = 2;
 const near = 0.1;
@@ -85,34 +90,93 @@ tooltip.style.borderRadius = '3px';
 tooltip.style.pointerEvents = 'auto';
 document.body.appendChild(tooltip);
 
-function showTooltip(d: any, event: MouseEvent) {
+let hideTimeout: NodeJS.Timeout | null = null;
+let isMouseOverTooltip = false; 
+let isMouseOverElement = false;
+let isTooltipExpanded = false;
+
+/**
+ * Function to show tooltip on hover
+ */
+function showTooltip(contractor: any, event: MouseEvent) {
   const tooltip = document.getElementById('tooltip');    
   if (!tooltip) return;
+
+  if (hideTimeout) {
+    clearTimeout(hideTimeout);
+    hideTimeout = null;
+  }
   tooltip.style.display = 'block';
-  tooltip.innerHTML = 
-`
-<div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
-  <div style="flex-shrink: 0; padding: 5px; margin-right: 5px; color: ${d.color}">${buildingSvg}</div>
-  <div id="content" style="flex-grow: 1;">
-    <div style="font-size: 10px;">Name</div>
-    ${d.name}
-    <div style="font-size: 8px;">3 pcs</div>
-  </div>
-  <button style="flex-shrink: 0; padding: 5px 10px;">${dropDownSvg}</button>
-</div>
-`;
-  tooltip.style.borderLeft = `${d.color} solid 2px`;
+  updateTooltipContent(contractor, false);
+  tooltip.style.borderLeft = `${contractor.color} solid 2px`;
   tooltip.style.left = event.pageX + 'px';
   tooltip.style.top = event.pageY + 'px';
+
+  isMouseOverElement = true;
 }
 
-function hideTooltip() {
+function updateTooltipContent(element: any, expanded: boolean) {
   const tooltip = document.getElementById('tooltip');
-  if (tooltip) {
-    tooltip.style.display = 'none';
+  if (!tooltip) return;
+
+  const additionalInfo = expanded ? 
+  `
+  <div id="content" style="flex-grow: 1; margin-top: 12px;">
+    <div style="font-size: 8px; margin-bottom: 2px;">CONTRACTOR</div>
+    <div style="font-size: 12px;">${element.name}</div>
+    <div style="font-size: 8px; margin-top: 12px; margin-bottom: 2px;">STATUS</div>
+    <div style="
+      font-size: 10px; 
+      color: black; 
+      background-color: ${element.color}; 
+      border-radius: 12px; 
+      padding: 5px; 
+      padding-left: 5px;
+      padding-right: 5px;
+      margin-top: 2px;
+      display: inline-block;
+      min-width: 75px;
+      text-align: center;
+    ">
+      ${element.status}
+    </div>
+  </div>
+  ` 
+  : '';
+
+  tooltip.innerHTML = 
+`
+<div style="display: flex; justify-content: space-between; width: 300px; font-family: 'Montserrat', sans-serif;">
+  <div style="flex-shrink: 0; padding: 5px; margin-right: 5px; color: ${element.color};">${buildingSvg}</div>
+  <div id="content" style="font-size: 12px;flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start;">
+    <div style="font-size: 8px;">NAME</div>
+    ${element.item}
+    <div style="font-size: 8px;">3 pcs</div>
+    ${additionalInfo}
+  </div>
+  <button id="expandButton" style="flex-shrink: 0; padding: 5px 10px; border-radius: 50%; align-self: flex-start;">${dropDownSvg}</button>
+</div>
+`;
+
+  const expandButton = document.getElementById('expandButton');
+  if (expandButton) {
+    expandButton.addEventListener('click', () => {
+      isTooltipExpanded = !isTooltipExpanded;
+      updateTooltipContent(element, isTooltipExpanded);
+    });
   }
 }
 
+function hideTooltip() {
+  hideTimeout = setTimeout(() => {
+    if (!isMouseOverTooltip && !isMouseOverElement) {
+      const tooltip = document.getElementById('tooltip');
+      if (tooltip) {
+        tooltip.style.display = 'none';
+      }
+    }
+  }, 200);
+}
 
 /**
  * Updates the visibility of the html elements on the globe. This function is necessary as 
@@ -157,11 +221,9 @@ export function Globe({ globeConfig, data }: WorldProps) {
     | null
   >(null);
 
+  //ref for threeglobe and camera for element visibility handling
   const globeRef = useRef<ThreeGlobe | null>(null);
-
-  //Get position of the camera
   const { camera } = useThree();
-  const cameraPosition = camera.position;
   const previousCameraPosition = useRef(new THREE.Vector3());
 
   const defaultProps = {
@@ -298,8 +360,28 @@ export function Globe({ globeConfig, data }: WorldProps) {
         element.style.color = d.color;
         element.style.width = `3px`;
         element.style.pointerEvents = 'auto';
-        element.addEventListener('mouseover', (event) => showTooltip(d, event));
-        element.addEventListener('mouseout', hideTooltip);
+        element.addEventListener('mouseover', (event) => {
+          isMouseOverElement = true;
+          showTooltip(d, event);
+        });
+        element.addEventListener("mouseout", () => {
+          isMouseOverElement = false; 
+          hideTooltip(); 
+        });
+        element.addEventListener('mousemove', (event) => {
+          showTooltip(d, event);
+        });
+        tooltip.addEventListener("mouseover", () => {
+          isMouseOverTooltip = true;
+            if (hideTimeout) {
+              clearTimeout(hideTimeout);
+              hideTimeout = null;
+            }
+        });
+        tooltip.addEventListener("mouseout", () => {
+          isMouseOverTooltip = false;
+          hideTooltip(); 
+        });
         d.elem = element;
         return element;
       });

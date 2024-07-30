@@ -1,0 +1,73 @@
+.streaming-feed {
+  position: fixed;
+  right: 0;
+  top: 0;
+  width: 300px;
+  height: 100vh;
+  padding: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: none;
+  z-index: 1;
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+.feed-item {
+  padding: 10px;
+  height: 100px;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  transition: background-color 0.3s ease;
+  box-sizing: border-box;
+  margin-bottom: 5px;
+}
+
+.feed-header {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center; 
+}
+
+.feed-status {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.feed-date {
+  font-size: 9px;
+  color: #cccccc;
+}
+
+.feed-details {
+  margin-top: 5px; 
+  display: flex;
+  flex-direction: column;
+  gap: 5px; 
+}
+
+.feed-item-detail {
+  font-size: 9px;
+  color: #bbbbbb; 
+}
+
+.feed-contractor {
+  font-size: 9px;
+  color: #aaaaaa;
+}
+
+.status-in-production {
+  color: #FFD700;
+  text-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+}
+
+.status-on-site {
+  color: #32CD32; 
+  text-shadow: 0 0 8px rgba(50, 205, 50, 0.8);
+}
+
+.status-released {
+  color: #f43f5e;
+  text-shadow: 0 0 8px rgba(244, 63, 94, 0.8);
+}
