@@ -146,7 +146,7 @@ function updateTooltipContent(element: any, expanded: boolean) {
 
   tooltip.innerHTML = 
 `
-<div style="display: flex; justify-content: space-between; width: 300px; font-family: 'Montserrat', sans-serif;">
+<div style="display: flex; justify-content: space-between; width: 300px; user-select: none">
   <div style="flex-shrink: 0; padding: 5px; margin-right: 5px; color: ${element.color};">${buildingSvg}</div>
   <div id="content" style="font-size: 12px;flex-grow: 1; display: flex; flex-direction: column; justify-content: flex-start;">
     <div style="font-size: 8px;">NAME</div>

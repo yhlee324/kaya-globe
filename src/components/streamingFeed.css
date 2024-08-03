@@ -2,19 +2,18 @@
   position: fixed;
   right: 0;
   top: 0;
-  width: 300px;
+  width: 285px;
   height: 100vh;
-  padding: 10px;
+  padding-right: 10px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background-color: none;
   z-index: 1;
   background-color: rgba(0, 0, 0, 0.2);
+  user-select: none;
 }
 
 .feed-item {
-  padding: 10px;
   height: 100px;
   color: white;
   display: flex;

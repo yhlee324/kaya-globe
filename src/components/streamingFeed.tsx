@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useSpring, animated } from "@react-spring/web";
 import testFeedData from "./data/Unique_Contractors.json";
+import axios from "axios";
 import "./StreamingFeed.css";
 
 interface FeedItem {
@@ -12,8 +13,6 @@ interface FeedItem {
   contractor_name: string;
   lead_time: number;
   status: string;
-  latitude: number;
-  longitude: number;
   submittal_number: string;
 }
 
