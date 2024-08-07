@@ -2,17 +2,16 @@
 
 import React, { useEffect, useState } from "react";
 import { useSpring, animated } from "@react-spring/web";
-import testFeedData from "./data/Unique_Contractors.json";
 import axios from "axios";
 import "./StreamingFeed.css";
 
 interface FeedItem {
-  _id: number;
-  item: string;
-  created_at: string;
-  contractor_name: string;
+  id: string;
+  spec_description: string;
+  date_last_updated: string;
+  responsible_contractor: string;
   lead_time: number;
-  status: string;
+  procurement_status: string;
   submittal_number: string;
 }
 
@@ -21,7 +20,16 @@ const StreamingFeed: React.FC = () => {
   const [scrollPosition, setScrollPosition] = useState(0);
 
   useEffect(() => {
-    setFeedItems(testFeedData);
+    const fetchData = async () => {
+      try {
+        const response = await axios.get<FeedItem[]>("http://localhost:8000/feed_items");
+        setFeedItems(response.data);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   // React Spring animation
@@ -29,7 +37,7 @@ const StreamingFeed: React.FC = () => {
     to: { scrollPosition: scrollPosition + 1 },
     from: { scrollPosition: 0 },
     config: { duration: 2000 }, // Scrolling Speed
-    onRest: () => setScrollPosition((prev) => (prev + 1) % testFeedData.length),
+    onRest: () => setScrollPosition((prev) => (prev + 1) % feedItems.length),
   });
 
   const getStatusClass = (status: string) => {
@@ -55,18 +63,18 @@ const StreamingFeed: React.FC = () => {
         }}
       >
         {feedItems.map((feed) => (
-          <div key={feed._id} className="feed-item">
+          <div key={feed.id} className="feed-item">
           <div className="feed-header">
-            <div className={`feed-status ${getStatusClass(feed.status)}`}>
-              {feed.status}
+            <div className={`feed-status ${getStatusClass(feed.procurement_status)}`}>
+              {feed.procurement_status}
             </div>
             <small className="feed-date">
-              {new Date(feed.created_at).toLocaleString()}
+              {new Date(feed.date_last_updated).toLocaleString()}
             </small>
           </div>
           <div className="feed-details">
-            <div className="feed-item-detail">{feed.item}</div>
-            <div className="feed-contractor">{feed.contractor_name}</div>
+            <div className="feed-item-detail">{feed.spec_description}</div>
+            <div className="feed-contractor">{feed.responsible_contractor}</div>
           </div>
         </div>
         ))}

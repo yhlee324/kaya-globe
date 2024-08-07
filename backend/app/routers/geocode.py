@@ -1,8 +1,10 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import HTTPException, APIRouter
 from pymongo import MongoClient
 from dotenv import load_dotenv
 import os
 import requests
+
+router = APIRouter()
 
 # Load environment variables
 load_dotenv()
@@ -10,13 +12,13 @@ load_dotenv()
 MONGODB_URI = os.getenv('MONGODB_URI')
 GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
 
-# Connect to MongoDB
-client = MongoClient(MONGODB_URI)
-db = client['Order_Table']
-collection = db['test2']
-new_collection = db['unique_contractors']
-
-app = FastAPI()
+try:
+    client = MongoClient(MONGODB_URI)
+    db = client['Order_Table']
+    collection = db['test2']
+    new_collection = db['unique_contractors']
+except Exception as e:
+    raise Exception(f"Error connecting to MongoDB: {str(e)}")
 
 def get_coordinates(company_name):
     escaped_company_name = requests.utils.quote(company_name)
@@ -33,8 +35,8 @@ def get_coordinates(company_name):
     else:
         raise HTTPException(status_code=400, detail=f"Error fetching coordinates for {company_name}")
 
-@app.post("/create-unique-contractors/")
-def create_unique_contractors():
+@router.post("/create-unique-contractors/")
+async def create_unique_contractors():
     contractors = collection.distinct("responsible_contractor")
     new_data = []
     for contractor in contractors:
@@ -57,7 +59,3 @@ def create_unique_contractors():
     if new_data:
         new_collection.insert_many(new_data)
     return {"inserted_count": len(new_data)}
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
